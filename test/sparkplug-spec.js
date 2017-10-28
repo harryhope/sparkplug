@@ -1,3 +1,4 @@
+/* eslint no-unused-expressions: 0 */
 const {expect} = require('chai')
 const {DynamoDB} = require('aws-sdk')
 const dynalite = require('dynalite')
@@ -181,6 +182,7 @@ describe('Sparkplug', () => {
         }]
 
         client.batchWrite({RequestItems: obj}, (err) => {
+          if (err) throw err
           const sparkplug = new Sparkplug(config)
           const accounts = sparkplug.table(ACCOUNT_TABLE)
           const orgs = sparkplug.table(ORG_TABLE)
@@ -200,7 +202,6 @@ describe('Sparkplug', () => {
 
     describe('put', () => {
       it('should put multiple items in the db', (done) => {
-
         let obj = {}
         obj[ACCOUNT_TABLE] = {Keys: [{email: 'johnny.quest@example.com'}]}
         obj[ORG_TABLE] = {Keys: [{name: 'Github'}]}
