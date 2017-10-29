@@ -10,6 +10,8 @@ const dynamoPromise = (client, operation, payload) => {
       }
       if (resp.Item) {
         formattedResponse = resp.Item
+      } else if (resp.Items) {
+        formattedResponse = resp.Items
       } else if (resp.Responses) {
         formattedResponse = resp.Responses
       } else {
@@ -21,23 +23,24 @@ const dynamoPromise = (client, operation, payload) => {
 }
 
 const deconstruct = (obj) => {
-  return _(obj)
-    .reduce((result, value, key) => {
-      const ref = `:${key}`
-      result.values[ref] = value
-      result.expression.push((_.isArray(value)
-        ? `contains(${key}, ${ref})`
-        : `${key} = ${ref}`
-      ))
-      return result
-    }, {expression: [], values: {}})
-    .tap(({expression, values}) => {
-      return {
-        expression: expression.join(' AND '),
-        values
-      }
-    })
-    .value()
+  return _.thru(_.reduce(obj, (result, value, key) => {
+    const ref = `:${key}`
+    const nameRef = `#${key}`
+    result.values[ref] = value
+    result.names[nameRef] = key
+    result.expression.push((_.isArray(value)
+      ? `contains(${nameRef}, ${ref})`
+      : `${nameRef} = ${ref}`
+    ))
+    return result
+  }, {expression: [], values: {}, names: {}})
+  , ({expression, values, names}) => {
+    return {
+      expression: expression.join(' AND '),
+      values,
+      names
+    }
+  })
 }
 
 const batchWrite = (op, that, table, items) => {
@@ -142,13 +145,13 @@ class Table {
     })
   }
 
-  query (expression, values) {
-    return new Query(this, expression, values)
+  query (expression, values, names) {
+    return new Query(this, expression, values, names)
   }
 }
 
 class Query {
-  constructor (table, expression, values) {
+  constructor (table, expression, values, names) {
     this.table = table
     this.expression = {
       TableName: table.name,
@@ -157,11 +160,15 @@ class Query {
     }
     if (_.isObject(expression)) {
       const newExpression = deconstruct(expression)
-      this.KeyConditionExpression = newExpression.expression
-      this.ExpressionAttributeValues = newExpression.values
+      this.expression.KeyConditionExpression = newExpression.expression
+      this.expression.ExpressionAttributeValues = newExpression.values
+      this.expression.ExpressionAttributeNames = newExpression.names
     } else {
-      this.KeyConditionExpression = expression
-      this.ExpressionAttributeValues = values
+      this.expression.KeyConditionExpression = expression
+      this.expression.ExpressionAttributeValues = values
+      if (names) {
+        this.expression.ExpressionAttributeNames = names
+      }
     }
     return this
   }
@@ -169,6 +176,10 @@ class Query {
   on (index) {
     this.expression.IndexName = index
     return this
+  }
+
+  exec () {
+    return dynamoPromise(this.table.client, 'query', this.expression)
   }
 }
 

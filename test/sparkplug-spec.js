@@ -22,6 +22,23 @@ const accountSchema = {
   AttributeDefinitions: [{
     AttributeName: 'email',
     AttributeType: 'S'
+  }, {
+    AttributeName: 'name',
+    AttributeType: 'S'
+  }],
+  GlobalSecondaryIndexes: [{
+    IndexName: 'name',
+    KeySchema: [{
+      AttributeName: 'name',
+      KeyType: 'HASH'
+    }],
+    ProvisionedThroughput: {
+      ReadCapacityUnits: 1,
+      WriteCapacityUnits: 1
+    },
+    Projection: {
+      ProjectionType: 'ALL'
+    }
   }],
   KeySchema: [{
     AttributeName: 'email',
@@ -297,6 +314,43 @@ describe('Sparkplug', () => {
         .then((response) => {
           expect(response[0].accounts[0].email)
             .to.equal('johnny.quest@example.com')
+          done()
+        })
+        .catch((err) => {
+          done(err)
+        })
+    })
+  })
+
+  describe('Query', () => {
+    it('should allow queries via object', (done) => {
+      const sparkplug = new Sparkplug(config)
+      const accounts = sparkplug.table(ACCOUNT_TABLE)
+      sparkplug.batch().put(accounts, [{
+        email: 'johnny.quest@example.com',
+        name: 'Johnny Quest',
+        id: 12345
+      }, {
+        email: 'batman@example.com',
+        name: 'Bruce Wayne',
+        id: 54221
+      }])
+        .exec()
+        .then((resp) => {
+          return accounts
+            .query({name: 'Bruce Wayne'})
+            .on('name')
+            .exec()
+        })
+        .then((resp) => {
+          expect(resp[0].id).to.equal(54221)
+          return accounts
+            .query('#name = :name', {':name': 'Bruce Wayne'}, {'#name': 'name'})
+            .on('name')
+            .exec()
+        })
+        .then((resp) => {
+          expect(resp[0].id).to.equal(54221)
           done()
         })
         .catch((err) => {
