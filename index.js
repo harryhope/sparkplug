@@ -20,6 +20,39 @@ const dynamoPromise = (client, operation, payload) => {
   })
 }
 
+const deconstruct = (obj) => {
+  return _(obj)
+    .reduce((result, value, key) => {
+      const ref = `:${key}`
+      result.values[ref] = value
+      result.expression.push((_.isArray(value)
+        ? `contains(${key}, ${ref})`
+        : `${key} = ${ref}`
+      ))
+      return result
+    }, {expression: [], values: {}})
+    .tap(({expression, values}) => {
+      return {
+        expression: expression.join(' AND '),
+        values
+      }
+    })
+    .value()
+}
+
+const batchWrite = (op, that, table, items) => {
+  if (!that._put[table.name]) {
+    that._put[table.name] = []
+  }
+  const values = _.castArray(items).map((item) => {
+    const value = {}
+    value[op] = op === 'DeleteRequest' ? {Key: item} : {Item: item}
+    return value
+  })
+  that._put[table.name] = that._put[table.name].concat(values)
+  return that
+}
+
 class Sparkplug {
   constructor (config) {
     this.client = new DocumentClient(config)
@@ -30,40 +63,54 @@ class Sparkplug {
     return new Table(tableName, this.client)
   }
 
-  batch (tables) {
-    return new Batch(tables, this.client)
+  batch () {
+    return new Batch(this.client)
   }
 }
 
 class Batch {
-  constructor (tables, client) {
-    this.tables = tables
+  constructor (client) {
     this.client = client
+    this._get = {}
+    this._put = {}
     return this
   }
 
-  get (keys) {
-    return dynamoPromise(this.client, 'batchGet', {
-      RequestItems: this.tables.reduce((obj, table, index) => {
-        obj[table.name] = {
-          Keys: _.castArray(keys[index])
-        }
-        return obj
-      }, {})
-    })
+  get (table, keys) {
+    if (!this._get[table.name]) {
+      this._get[table.name] = {Keys: []}
+    }
+    this._get[table.name].Keys = this._get[table.name].Keys
+      .concat(_.castArray(keys))
+    return this
   }
 
-  put (items) {
-    return dynamoPromise(this.client, 'batchWrite', {
-      RequestItems: this.tables.reduce((obj, table, index) => {
-        obj[table.name] = [{
-          PutRequest: {
-            Item: items[index]
-          }
-        }]
-        return obj
-      }, {})
-    })
+  put (table, items) {
+    return batchWrite('PutRequest', this, table, items)
+  }
+
+  delete (table, keys) {
+    return batchWrite('DeleteRequest', this, table, keys)
+  }
+
+  exec () {
+    const promises = _.filter([
+      {op: 'batchGet', obj: this._get},
+      {op: 'batchWrite', obj: this._put}
+    ].map(({op, obj}) => {
+      if (!_.isEmpty(obj)) {
+        return dynamoPromise(this.client, op, {
+          RequestItems: obj
+        })
+      } else {
+        return null
+      }
+    }))
+    if (promises.length === 1) {
+      return promises[0]
+    } else {
+      return Promise.all(promises)
+    }
   }
 }
 
@@ -93,6 +140,35 @@ class Table {
       Key: key,
       TableName: this.name
     })
+  }
+
+  query (expression, values) {
+    return new Query(this, expression, values)
+  }
+}
+
+class Query {
+  constructor (table, expression, values) {
+    this.table = table
+    this.expression = {
+      TableName: table.name,
+      KeyConditionExpression: '',
+      ExpressionAttributeValues: {}
+    }
+    if (_.isObject(expression)) {
+      const newExpression = deconstruct(expression)
+      this.KeyConditionExpression = newExpression.expression
+      this.ExpressionAttributeValues = newExpression.values
+    } else {
+      this.KeyConditionExpression = expression
+      this.ExpressionAttributeValues = values
+    }
+    return this
+  }
+
+  on (index) {
+    this.expression.IndexName = index
+    return this
   }
 }
 

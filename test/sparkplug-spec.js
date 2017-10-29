@@ -186,16 +186,18 @@ describe('Sparkplug', () => {
           const sparkplug = new Sparkplug(config)
           const accounts = sparkplug.table(ACCOUNT_TABLE)
           const orgs = sparkplug.table(ORG_TABLE)
-          sparkplug.batch([accounts, orgs]).get([
-            {email: 'johnny.quest@example.com'},
-            {name: 'Github'}
-          ]).then(({accounts, organizations}) => {
-            expect(accounts[0].name).to.equal('Johnny Quest')
-            expect(organizations[0].id).to.equal(45678)
-            done()
-          }).catch((err) => {
-            done(err)
-          })
+          sparkplug
+            .batch()
+            .get(accounts, {email: 'johnny.quest@example.com'})
+            .get(orgs, {name: 'Github'})
+            .exec()
+            .then(({accounts, organizations}) => {
+              expect(accounts[0].name).to.equal('Johnny Quest')
+              expect(organizations[0].id).to.equal(45678)
+              done()
+            }).catch((err) => {
+              done(err)
+            })
         })
       })
     })
@@ -203,35 +205,103 @@ describe('Sparkplug', () => {
     describe('put', () => {
       it('should put multiple items in the db', (done) => {
         let obj = {}
-        obj[ACCOUNT_TABLE] = {Keys: [{email: 'johnny.quest@example.com'}]}
+        obj[ACCOUNT_TABLE] = {Keys: [
+          {email: 'johnny.quest@example.com'},
+          {email: 'batman@example.com'}
+        ]}
         obj[ORG_TABLE] = {Keys: [{name: 'Github'}]}
 
         const sparkplug = new Sparkplug(config)
         const accounts = sparkplug.table(ACCOUNT_TABLE)
         const orgs = sparkplug.table(ORG_TABLE)
-        sparkplug.batch([accounts, orgs]).put([
-          {
-            email: 'johnny.quest@example.com',
-            name: 'Johnny Quest',
-            id: 12345
-          },
-          {
+        sparkplug.batch().put(accounts, [{
+          email: 'johnny.quest@example.com',
+          name: 'Johnny Quest',
+          id: 12345
+        }, {
+          email: 'batman@example.com',
+          name: 'Bruce Wayne',
+          id: 54221
+        }])
+          .put(orgs, {
             name: 'Github',
             id: 45678
-          }
-        ]).then((resp) => {
-          client.batchGet({
-            RequestItems: obj
-          }, (err, response) => {
-            if (err) throw err
-            expect(response.Responses.accounts[0].name).to.equal('Johnny Quest')
-            expect(response.Responses.organizations[0].id).to.equal(45678)
+          })
+          .exec()
+          .then((resp) => {
+            client.batchGet({
+              RequestItems: obj
+            }, (err, response) => {
+              if (err) throw err
+              expect(response.Responses.accounts.length).to.equal(2)
+              expect(response.Responses.organizations[0].id).to.equal(45678)
+              done()
+            })
+          }).catch((err) => {
+            done(err)
+          })
+      })
+    })
+
+    describe('delete', () => {
+      it('should batch delete', (done) => {
+        const sparkplug = new Sparkplug(config)
+        const accounts = sparkplug.table(ACCOUNT_TABLE)
+        accounts.put({
+          email: 'johnny.quest@example.com',
+          name: 'Johnny Quest',
+          id: 12345
+        })
+          .then((resp) => {
+            return sparkplug
+              .batch()
+              .delete(accounts, {email: 'johnny.quest@example.com'})
+              .exec()
+          })
+          .then((resp) => {
+            return accounts.get({email: 'johnny.quest@example.com'})
+          })
+          .then((resp) => {
+            expect(resp).to.be.an('object').that.is.empty
             done()
           })
-        }).catch((err) => {
+          .catch((err) => {
+            done(err)
+          })
+      })
+    })
+
+    it('should be able to get/put at the same time', (done) => {
+      const sparkplug = new Sparkplug(config)
+      const accounts = sparkplug.table(ACCOUNT_TABLE)
+      const orgs = sparkplug.table(ORG_TABLE)
+      accounts
+        .put({
+          email: 'johnny.quest@example.com',
+          name: 'Johnny Quest',
+          id: 12345
+        })
+        .then((resp) => {
+          return new Sparkplug(config)
+            .batch()
+            .get(accounts, {email: 'johnny.quest@example.com'})
+            .put(orgs, [{
+              name: 'Github',
+              id: 45678
+            }, {
+              name: 'E Corp',
+              id: 84758
+            }])
+            .exec()
+        })
+        .then((response) => {
+          expect(response[0].accounts[0].email)
+            .to.equal('johnny.quest@example.com')
+          done()
+        })
+        .catch((err) => {
           done(err)
         })
-      })
     })
   })
 
