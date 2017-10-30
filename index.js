@@ -36,9 +36,9 @@ const deconstruct = (obj) => {
   }, {expression: [], values: {}, names: {}})
   , ({expression, values, names}) => {
     return {
-      expression: expression.join(' AND '),
-      values,
-      names
+      KeyConditionExpression: expression.join(' AND '),
+      ExpressionAttributeValues: values,
+      ExpressionAttributeNames: names
     }
   })
 }
@@ -159,10 +159,7 @@ class Query {
       ExpressionAttributeValues: {}
     }
     if (_.isObject(expression)) {
-      const newExpression = deconstruct(expression)
-      this.expression.KeyConditionExpression = newExpression.expression
-      this.expression.ExpressionAttributeValues = newExpression.values
-      this.expression.ExpressionAttributeNames = newExpression.names
+      this.expression = Object.assign(this.expression, deconstruct(expression))
     } else {
       this.expression.KeyConditionExpression = expression
       this.expression.ExpressionAttributeValues = values
