@@ -335,27 +335,65 @@ describe('Sparkplug', () => {
         name: 'Bruce Wayne',
         id: 54221
       }])
-        .exec()
-        .then((resp) => {
-          return accounts
-            .query({name: 'Bruce Wayne'})
-            .on('name')
-            .exec()
-        })
-        .then((resp) => {
-          expect(resp[0].id).to.equal(54221)
-          return accounts
-            .query('#name = :name', {':name': 'Bruce Wayne'}, {'#name': 'name'})
-            .on('name')
-            .exec()
-        })
-        .then((resp) => {
-          expect(resp[0].id).to.equal(54221)
-          done()
-        })
-        .catch((err) => {
-          done(err)
-        })
+      .exec()
+      .then((resp) => {
+        return accounts
+          .query({name: 'Bruce Wayne'})
+          .on('name')
+          .exec()
+      })
+      .then((resp) => {
+        expect(resp[0].id).to.equal(54221)
+        return accounts
+          .query('#name = :name', {':name': 'Bruce Wayne'}, {'#name': 'name'})
+          .on('name')
+          .reverse()
+          .limit(1)
+          .exec()
+      })
+      .then((resp) => {
+        expect(resp[0].id).to.equal(54221)
+        return accounts
+          .query({email: 'johnny.quest@example.com'})
+          .strongRead()
+          .exec()
+      })
+      .then((resp) => {
+        expect(resp[0].id).to.equal(12345)
+        done()
+      })
+      .catch((err) => {
+        done(err)
+      })
+    })
+  })
+
+  describe('Scan', () => {
+    it('should allow scans via object', (done) => {
+      const sparkplug = new Sparkplug(config)
+      const accounts = sparkplug.table(ACCOUNT_TABLE)
+      sparkplug.batch().put(accounts, [{
+        email: 'johnny.quest@example.com',
+        name: 'Johnny Quest',
+        id: 12345
+      }, {
+        email: 'batman@example.com',
+        name: 'Bruce Wayne',
+        id: 54221
+      }])
+      .exec()
+      .then((resp) => {
+        return accounts
+          .scan({name: 'Bruce Wayne'})
+          .exec()
+      })
+      .then((resp) => {
+        expect(resp[0].id).to.equal(54221)
+        done()
+      })
+      .catch((err) => {
+        done(err)
+      })
     })
   })
 

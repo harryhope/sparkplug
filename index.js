@@ -22,7 +22,20 @@ const dynamoPromise = (client, operation, payload) => {
   })
 }
 
-const deconstruct = (obj) => {
+const formatResponse = (resp) => {
+  const obj = {
+    data: resp.Item || resp.Items || resp.Responses,
+    count: resp.Count,
+    scannedCount: resp.ScannedCount,
+    lastKey: resp.LastEvaluatedKey,
+  }
+  Object.keys(obj)
+    .forEach(key => obj[key] === undefined && delete obj[key])
+
+  return obj
+}
+
+const deconstruct = (obj, expressionProp) => {
   return _.thru(_.reduce(obj, (result, value, key) => {
     const ref = `:${key}`
     const nameRef = `#${key}`
@@ -34,12 +47,13 @@ const deconstruct = (obj) => {
     ))
     return result
   }, {expression: [], values: {}, names: {}})
-  , ({expression, values, names}) => {
-    return {
-      KeyConditionExpression: expression.join(' AND '),
+    , ({expression, values, names}) => {
+    const payload = {
       ExpressionAttributeValues: values,
       ExpressionAttributeNames: names
     }
+    payload[expressionProp] = expression.join(' AND ')
+    return payload
   })
 }
 
@@ -148,25 +162,59 @@ class Table {
   query (expression, values, names) {
     return new Query(this, expression, values, names)
   }
+
+  scan (expression, values, names) {
+    return new Scan(this, expression, values, names)
+  }
 }
 
-class Query {
-  constructor (table, expression, values, names) {
+class Expression {
+  constructor (table, expression, values, names, expressionProp) {
+    this.expression = {TableName: table.name}
     this.table = table
-    this.expression = {
-      TableName: table.name,
-      KeyConditionExpression: '',
-      ExpressionAttributeValues: {}
-    }
     if (_.isObject(expression)) {
-      this.expression = Object.assign(this.expression, deconstruct(expression))
+      this.expression = Object.assign(
+        this.expression,
+        deconstruct(expression, expressionProp)
+      )
     } else {
-      this.expression.KeyConditionExpression = expression
+      this.expression[expressionProp] = expression
       this.expression.ExpressionAttributeValues = values
       if (names) {
         this.expression.ExpressionAttributeNames = names
       }
     }
+    return this
+  }
+
+  reverse () {
+    this.expression.ScanIndexForward = false
+    return this
+  }
+
+  limit (limit) {
+    this.expression.Limit = limit
+    return this
+  }
+
+  strongRead () {
+    this.expression.ConsistentRead = true
+    return this
+  }
+
+  start (key) {
+    this.expression.ExclusiveStartKey = key
+    return this
+  }
+
+  exec (type) {
+    return dynamoPromise(this.table.client, type, this.expression)
+  }
+}
+
+class Query extends Expression {
+  constructor (table, expression, values, names) {
+    super(table, expression, values, names, 'KeyConditionExpression')
     return this
   }
 
@@ -176,10 +224,19 @@ class Query {
   }
 
   exec () {
-    return dynamoPromise(this.table.client, 'query', this.expression)
+    return super.exec('query')
   }
 }
 
-Sparkplug.Table = Table
-Sparkplug.Batch = Batch
+class Scan extends Expression {
+  constructor (table, expression, values, names) {
+    super(table, expression, values, names, 'FilterExpression')
+    return this
+  }
+
+  exec () {
+    return super.exec('scan')
+  }
+}
+
 module.exports = Sparkplug
