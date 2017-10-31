@@ -13,12 +13,11 @@ const dynamoPromise = (client, operation, payload) => {
 }
 
 const formatResponse = (resp) => {
-
   const obj = {
     data: resp.Item || resp.Items || resp.Responses,
     count: resp.Count,
     scannedCount: resp.ScannedCount,
-    lastKey: resp.LastEvaluatedKey,
+    lastKey: resp.LastEvaluatedKey
   }
 
   Object.keys(obj)
