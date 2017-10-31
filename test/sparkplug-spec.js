@@ -376,7 +376,7 @@ describe('Sparkplug', () => {
         email: 'johnny.quest@example.com',
         name: 'Johnny Quest',
         id: 12345
-      }, {
+      },{
         email: 'batman@example.com',
         name: 'Bruce Wayne',
         id: 54221
@@ -389,6 +389,14 @@ describe('Sparkplug', () => {
       })
       .then((resp) => {
         expect(resp[0].id).to.equal(54221)
+        return accounts
+          .scan()
+          .start({email: 'batman@example.com'})
+          .limit(1)
+          .exec()
+      })
+      .then((resp) => {
+        expect(resp[0].id).to.equal(12345)
         done()
       })
       .catch((err) => {
