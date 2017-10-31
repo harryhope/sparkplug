@@ -1,6 +1,6 @@
 {
   "name": "sparkplug",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A very thin wrapper over DynamoDB DocumentClient",
   "main": "index.js",
   "scripts": {
