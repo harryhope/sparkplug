@@ -4,31 +4,23 @@ const DocumentClient = require('aws-sdk').DynamoDB.DocumentClient
 const dynamoPromise = (client, operation, payload) => {
   return new Promise((resolve, reject) => {
     client[operation](payload, (err, resp) => {
-      let formattedResponse = null
       if (err !== null) {
         return reject(err)
       }
-      if (resp.Item) {
-        formattedResponse = resp.Item
-      } else if (resp.Items) {
-        formattedResponse = resp.Items
-      } else if (resp.Responses) {
-        formattedResponse = resp.Responses
-      } else {
-        formattedResponse = resp
-      }
-      return resolve(formattedResponse)
+      return resolve(formatResponse(resp))
     })
   })
 }
 
 const formatResponse = (resp) => {
+
   const obj = {
     data: resp.Item || resp.Items || resp.Responses,
     count: resp.Count,
     scannedCount: resp.ScannedCount,
     lastKey: resp.LastEvaluatedKey,
   }
+
   Object.keys(obj)
     .forEach(key => obj[key] === undefined && delete obj[key])
 

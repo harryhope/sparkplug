@@ -104,10 +104,10 @@ describe('Sparkplug', () => {
           new Sparkplug(config)
             .table(ACCOUNT_TABLE)
             .get({email: 'johnny.quest@example.com'})
-            .then((resp) => {
-              expect(resp.email).to.equal('johnny.quest@example.com')
-              expect(resp.name).to.equal('Johnny Quest')
-              expect(resp.id).to.equal(12345)
+            .then(({data}) => {
+              expect(data.email).to.equal('johnny.quest@example.com')
+              expect(data.name).to.equal('Johnny Quest')
+              expect(data.id).to.equal(12345)
               done()
             })
             .catch((err) => {
@@ -208,9 +208,9 @@ describe('Sparkplug', () => {
             .get(accounts, {email: 'johnny.quest@example.com'})
             .get(orgs, {name: 'Github'})
             .exec()
-            .then(({accounts, organizations}) => {
-              expect(accounts[0].name).to.equal('Johnny Quest')
-              expect(organizations[0].id).to.equal(45678)
+            .then(({data}) => {
+              expect(data.accounts[0].name).to.equal('Johnny Quest')
+              expect(data.organizations[0].id).to.equal(45678)
               done()
             }).catch((err) => {
               done(err)
@@ -312,7 +312,7 @@ describe('Sparkplug', () => {
             .exec()
         })
         .then((response) => {
-          expect(response[0].accounts[0].email)
+          expect(response[0].data.accounts[0].email)
             .to.equal('johnny.quest@example.com')
           done()
         })
@@ -342,8 +342,8 @@ describe('Sparkplug', () => {
           .on('name')
           .exec()
       })
-      .then((resp) => {
-        expect(resp[0].id).to.equal(54221)
+      .then(({data}) => {
+        expect(data[0].id).to.equal(54221)
         return accounts
           .query('#name = :name', {':name': 'Bruce Wayne'}, {'#name': 'name'})
           .on('name')
@@ -351,15 +351,15 @@ describe('Sparkplug', () => {
           .limit(1)
           .exec()
       })
-      .then((resp) => {
-        expect(resp[0].id).to.equal(54221)
+      .then(({data}) => {
+        expect(data[0].id).to.equal(54221)
         return accounts
           .query({email: 'johnny.quest@example.com'})
           .strongRead()
           .exec()
       })
-      .then((resp) => {
-        expect(resp[0].id).to.equal(12345)
+      .then(({data}) => {
+        expect(data[0].id).to.equal(12345)
         done()
       })
       .catch((err) => {
@@ -387,16 +387,16 @@ describe('Sparkplug', () => {
           .scan({name: 'Bruce Wayne'})
           .exec()
       })
-      .then((resp) => {
-        expect(resp[0].id).to.equal(54221)
+      .then(({data}) => {
+        expect(data[0].id).to.equal(54221)
         return accounts
           .scan()
           .start({email: 'batman@example.com'})
           .limit(1)
           .exec()
       })
-      .then((resp) => {
-        expect(resp[0].id).to.equal(12345)
+      .then(({data}) => {
+        expect(data[0].id).to.equal(12345)
         done()
       })
       .catch((err) => {
