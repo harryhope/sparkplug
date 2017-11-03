@@ -185,10 +185,16 @@ describe('Sparkplug', () => {
           .then((resp) => {
             return new Sparkplug(config)
               .table(ACCOUNT_TABLE)
-              .condition('attribute_not_exists(email)')
+              .condition('#email <> :email AND #name <> :name', {
+                ':name': 'Bob Sanders',
+                ':email': 'johnny.quest@example.com'
+              }, {
+                '#name': 'name',
+                '#email': 'email'
+              })
               .put({
                 email: 'johnny.quest@example.com',
-                name: 'Johnny Quest',
+                name: 'Bob Sanders',
                 id: 45678
               })
           })
