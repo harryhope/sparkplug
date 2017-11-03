@@ -12,6 +12,13 @@ const dynamoPromise = (client, operation, payload) => {
   })
 }
 
+const removeUndefined = (oldObj) => {
+  const obj = _.clone(oldObj)
+  Object.keys(obj)
+    .forEach(key => obj[key] === undefined && delete obj[key])
+  return obj
+}
+
 const formatResponse = (resp) => {
   const obj = {
     data: resp.Item || resp.Items || resp.Responses,
@@ -20,10 +27,7 @@ const formatResponse = (resp) => {
     lastKey: resp.LastEvaluatedKey
   }
 
-  Object.keys(obj)
-    .forEach(key => obj[key] === undefined && delete obj[key])
-
-  return obj
+  return removeUndefined(obj)
 }
 
 const deconstruct = (obj, expressionProp) => {
@@ -59,6 +63,20 @@ const batchWrite = (op, that, table, items) => {
   })
   that._put[table.name] = that._put[table.name].concat(values)
   return that
+}
+
+const getFilterExpression = (expression, values, names, expressionProp) => {
+  let filterExpression = {}
+  if (_.isObject(expression)) {
+    filterExpression = deconstruct(expression, expressionProp)
+  } else {
+    filterExpression[expressionProp] = expression
+    filterExpression.ExpressionAttributeValues = values
+    if (names) {
+      filterExpression.ExpressionAttributeNames = names
+    }
+  }
+  return filterExpression
 }
 
 class Sparkplug {
@@ -123,9 +141,10 @@ class Batch {
 }
 
 class Table {
-  constructor (tableName, client) {
+  constructor (tableName, client, expression = {}) {
     this.name = tableName
     this.client = client
+    this.expression = expression
     return this
   }
 
@@ -137,10 +156,11 @@ class Table {
   }
 
   put (item) {
-    return dynamoPromise(this.client, 'put', {
-      Item: item,
-      TableName: this.name
-    })
+    return dynamoPromise(this.client, 'put',
+      _.assign(this.expression, {
+        Item: item,
+        TableName: this.name
+      }))
   }
 
   delete (key) {
@@ -148,6 +168,12 @@ class Table {
       Key: key,
       TableName: this.name
     })
+  }
+
+  condition (expression, values, names) {
+    return new Table(this.name, this.client,
+      getFilterExpression(expression, values, names, 'ConditionExpression')
+    )
   }
 
   query (expression, values, names) {
@@ -163,18 +189,10 @@ class Expression {
   constructor (table, expression, values, names, expressionProp) {
     this.expression = {TableName: table.name}
     this.table = table
-    if (_.isObject(expression)) {
-      this.expression = Object.assign(
-        this.expression,
-        deconstruct(expression, expressionProp)
-      )
-    } else {
-      this.expression[expressionProp] = expression
-      this.expression.ExpressionAttributeValues = values
-      if (names) {
-        this.expression.ExpressionAttributeNames = names
-      }
-    }
+    this.expression = _.assign(
+      this.expression,
+      getFilterExpression(expression, values, names, expressionProp)
+    )
     return this
   }
 
@@ -196,6 +214,10 @@ class Expression {
   start (key) {
     this.expression.ExclusiveStartKey = key
     return this
+  }
+
+  toObject () {
+    return removeUndefined(this.expression)
   }
 
   exec (type) {

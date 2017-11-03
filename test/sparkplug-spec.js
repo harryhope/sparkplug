@@ -173,6 +173,33 @@ describe('Sparkplug', () => {
             done(err)
           })
       })
+
+      it('should apply conditional queries', (done) => {
+        new Sparkplug(config)
+          .table(ACCOUNT_TABLE)
+          .put({
+            email: 'johnny.quest@example.com',
+            name: 'Johnny Quest',
+            id: 12345
+          })
+          .then((resp) => {
+            return new Sparkplug(config)
+              .table(ACCOUNT_TABLE)
+              .condition('attribute_not_exists(email)')
+              .put({
+                email: 'johnny.quest@example.com',
+                name: 'Johnny Quest',
+                id: 45678
+              })
+          })
+          .then((resp) => {
+            done(new Error('Condition Succeeded'))
+          })
+          .catch((err) => {
+            expect(err.name).to.equal('ConditionalCheckFailedException')
+            done()
+          })
+      })
     })
   })
 
@@ -402,6 +429,25 @@ describe('Sparkplug', () => {
         .catch((err) => {
           done(err)
         })
+    })
+
+    describe('toObject', () => {
+      it('should decompose to an object', () => {
+        const sparkplug = new Sparkplug(config)
+        const accounts = sparkplug.table(ACCOUNT_TABLE)
+        expect(accounts
+          .scan()
+          .start({email: 'batman@example.com'})
+          .limit(1)
+          .strongRead()
+          .toObject()
+        ).to.deep.equal({
+          TableName: 'accounts',
+          ExclusiveStartKey: { email: 'batman@example.com' },
+          ConsistentRead: true,
+          Limit: 1
+        })
+      })
     })
   })
 
