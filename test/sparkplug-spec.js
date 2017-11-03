@@ -443,7 +443,7 @@ describe('Sparkplug', () => {
           .toObject()
         ).to.deep.equal({
           TableName: 'accounts',
-          ExclusiveStartKey: { email: 'batman@example.com' },
+          ExclusiveStartKey: {email: 'batman@example.com'},
           ConsistentRead: true,
           Limit: 1
         })
