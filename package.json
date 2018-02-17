@@ -6,8 +6,7 @@
   "scripts": {
     "lint": "./node_modules/.bin/eslint . --ext .js",
     "lint:fix": "./node_modules/.bin/eslint --fix . --ext .js",
-    "test": "CONTEXT=test nyc ./node_modules/.bin/mocha -t 12000",
-    "derp": "echo hi"
+    "test": "CONTEXT=test nyc ./node_modules/.bin/mocha -t 12000"
   },
   "repository": {
     "type": "git",
