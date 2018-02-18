@@ -2,4 +2,18 @@
 
 ***
 
-A very thin wrapper over DynamoDB DocumentClient
+Sparkplug is a very thin wrapper over DynamoDB DocumentClient with a nicer interface that feels more idomatic to javascript. It's not intended to be an ORM or a heavy abstraction over Amazon's client, but to smooth out the rough edges.
+
+```js
+const Sparkplug = require('sparkplug')
+const plug = new Sparkplug()
+
+plug
+  .table('accounts')
+  .get({ email: 'darth.vader@hotmail.com' })
+  .then(({ data }) => {
+    console.log(data.name)
+  }).catch((err) => {
+    // handle errors
+  })
+```
