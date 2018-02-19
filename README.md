@@ -17,3 +17,11 @@ plug
     // handle errors
   })
 ```
+
+## Installation
+Sparkplug is available through the [npm registry](https://www.npmjs.com/)
+
+Download and install using `npm install`.
+```
+npm install sparkplug
+```
