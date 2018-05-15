@@ -12,7 +12,7 @@ const plug = new Sparkplug()
 
 plug
   .table('accounts')
-  .get({ email: 'darth.vader@hotmail.com' })
+  .get({ email: 'darth.vader@hothmail.com' })
   .then(({ data }) => {
     console.log(data.name)
   }).catch((err) => {
