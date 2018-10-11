@@ -28,18 +28,18 @@
   "homepage": "https://github.com/harryhope/sparkplug#readme",
   "devDependencies": {
     "chai": "^4.1.2",
-    "dynalite": "^1.2.0",
-    "eslint": "^4.10.0",
+    "dynalite": "^2.0.0",
+    "eslint": "^5.6.1",
     "eslint-config-standard": "^10.2.1",
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-node": "^5.2.1",
     "eslint-plugin-promise": "^3.6.0",
     "eslint-plugin-standard": "^3.0.1",
     "mocha": "^4.0.1",
-    "nyc": "^11.2.1"
+    "nyc": "^13.1.0"
   },
   "dependencies": {
-    "aws-sdk": "^2.141.0",
-    "lodash": "^4.17.4"
+    "aws-sdk": "^2.332.0",
+    "lodash": "^4.17.11"
   }
 }
