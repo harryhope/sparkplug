@@ -29,3 +29,24 @@ Download and install using `npm install`.
 ```
 npm install sparkplug
 ```
+
+## Usage
+
+Instances of Sparkplug can be passed configuration options. Sparkplug accepts the same config options that Amazon's [DynamoDB](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html) client does, including [`endpoint` and `region`](https://docs.aws.amazon.com/AWSJavaScriptSDK/latest/AWS/DynamoDB.html#endpoint-property).
+
+If you're running in context such as a Lambda function, you might not need to pass in any values at all, as they are automatically configured on AWS.
+
+```
+const Sparkplug = require('sparkplug')
+
+// Use default environment variables.
+const plug = new Sparkplug()
+```
+
+If running locally via [DynamoDB Local](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/DynamoDBLocal.html) or [Dynalite](https://github.com/mhart/dynalite), you can use the `localhost` region along with the local endpoint.
+```
+const localPlug = new Sparkplug({
+  region: 'localhost',
+  endpoint: 'http://localhost:4567'
+})
+```
