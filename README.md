@@ -36,6 +36,7 @@ npm install sparkplug
 - [Reading Data](#reading-data)
 - [Writing and Deleting](#writing-and-deleting)
 - [Queries and Scans](#queries-and-scans)
+- [Batch Operations](#batch-operations)
 
 ---
 
@@ -175,3 +176,34 @@ const promise = plug
   .exec()
 ```
 
+### Batch Operations
+You can use Sparkplug to make batch `get` and `put` and `delete` requests by using the `.batch()` method. Batch operations accept a sparkplug `Table` as their first parameter and either an object or array of objects as their second.
+
+```js
+const accounts = sparkplug.table(ACCOUNT_TABLE)
+const orgs = sparkplug.table(ORG_TABLE)
+const promise = plug
+  .batch()
+  .put(accounts, [{
+    email: 'admiral.ackbar@hothmail.com',
+    name: 'Admiral Ackbar',
+    planet: 'Mon Calamari'
+  }, {
+    email: 'darth.vader@hothmail.com',
+    name: 'Darth Vader',
+    planet: 'Tatooine'
+  }])
+  .put(orgs, {
+    name: 'Github',
+    id: 45678
+  })
+  .exec()
+```
+
+## Contributing
+Sparkplug is open for contributions via GitHub Pull Requests!
+
+To run tests and a coverage report against the codebase: 
+- clone the repository, 
+- run `npm i` to install dependencies
+- run `npm test`
