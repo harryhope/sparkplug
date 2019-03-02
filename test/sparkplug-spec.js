@@ -108,6 +108,17 @@ describe('Sparkplug', () => {
               expect(data.email).to.equal('johnny.quest@example.com')
               expect(data.name).to.equal('Johnny Quest')
               expect(data.id).to.equal(12345)
+              return new Sparkplug(config).table(ACCOUNT_TABLE).get({
+                email: 'johnny.quest@example.com'
+              }, {
+                strongRead: true
+              }
+              )
+            })
+            .then(({data}) => {
+              expect(data.email).to.equal('johnny.quest@example.com')
+              expect(data.name).to.equal('Johnny Quest')
+              expect(data.id).to.equal(12345)
               done()
             })
             .catch((err) => {

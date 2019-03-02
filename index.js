@@ -42,7 +42,7 @@ const deconstruct = (obj, expressionProp) => {
     ))
     return result
   }, {expression: [], values: {}, names: {}})
-    , ({expression, values, names}) => {
+  , ({expression, values, names}) => {
     const payload = {
       ExpressionAttributeValues: values,
       ExpressionAttributeNames: names
@@ -148,10 +148,11 @@ class Table {
     return this
   }
 
-  get (key) {
+  get (key, options = {}) {
     return dynamoPromise(this.client, 'get', {
       Key: key,
-      TableName: this.name
+      TableName: this.name,
+      ConsistentRead: !!options.strongRead
     })
   }
 
