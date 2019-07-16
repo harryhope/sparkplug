@@ -40,6 +40,6 @@
   },
   "dependencies": {
     "aws-sdk": "^2.332.0",
-    "lodash": "^4.17.11"
+    "lodash": "^4.17.14"
   }
 }
