@@ -6,7 +6,7 @@
 
 Sparkplug is a very thin wrapper over DynamoDB DocumentClient with a nicer, Promise-based interface that feels more idiomatic to javascript. That means less nested indecipherable json and [PascalCase](http://wiki.c2.com/?PascalCase)'d properties. 
 
-Sparkplug isn't intended to be an ORM or a heavy abstraction over Amazon's client. It also doesn't deal with setting up table schemas programatically, as that is best left to [CloudFormation](https://aws.amazon.com/cloudformation/) or configuration through tooling such as [serverless](https://serverless.com).
+Sparkplug isn't intended to be an ODM or a heavy abstraction over Amazon's client. It also doesn't deal with setting up table schemas programatically, as that is best left to [Terraform](https://www.terraform.io), [CloudFormation](https://aws.amazon.com/cloudformation/) or configuration through tooling such as [serverless](https://serverless.com).
 
 ```js
 const Sparkplug = require('sparkplug')
